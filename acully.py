@@ -65,7 +65,7 @@ boundariesFile<<boundaries
 
 ################################
 
-dt=0.1
+dt=0.01
 timespan=1
 
 g=9.81
@@ -79,7 +79,13 @@ prevPhi = Constant(0)
 prevPhiVel = Constant(0)
 prevPhiAcc = Constant(0)
 
+#prevPhi = Function(V)
+#prevPhiVel = Function(V)
+#prevPhiAcc = Function(V)
+
 phiFile = File("phi.pvd")
+
+pressureFile = File("pressure.pvd")
 
 while (time<timespan):
  
@@ -92,28 +98,36 @@ while (time<timespan):
  
  v = TestFunction(V)
  
- if (time>0.5):
-  inFlow=Constant(1.0)
- else:
-  inFlow=Constant(0.0)
+ inFlow=Constant(1.0)
  
  outFlow=Constant(0.0)
- F = dot(grad(phi),grad(v))*dx(0) - g*phiAcc*v*ds(1) - inFlow*v*ds(2) + outFlow*v*ds(3)
+ F = dot(grad(phi),grad(v))*dx(0) + g*phiAcc*v*ds(1) - inFlow*v*ds(2) + outFlow*v*ds(3)
  
  a,L = lhs(F),rhs(F)
  
  bc1 = DirichletBC(V, 0, boundaries, 4)
  bc2 = DirichletBC(V, 0, boundaries, 0)
  
- bcs = [bc1]#,bc2]
+ bcs = [bc1,bc2]
  
  phi = Function(V)
- solve(a==L, phi, bcs)
+ solve(a==L, phi, bc1)
  
  phiFile<<phi
  
- phiVel = (phi-prevPhi)*Constant(2/dt)-prevPhiVel
+ phiVel = ((phi-prevPhi)*2/dt)-prevPhiVel
  phiAcc = (phiVel-prevPhiVel)*Constant(2/dt)-prevPhiAcc
+ 
+ print(type(phi))
+ print(type(phiVel))
+ 
+ pressure = phiVel*Constant(rho)
+ #print(phi([5,5,5]))
+ print(pressure([5,5,9]))
+ 
+ #plot(pressure)
+ 
+ #pressureFile<<pressure.copy()
  
  prevPhi=phi
  prevPhiVel=phiVel
