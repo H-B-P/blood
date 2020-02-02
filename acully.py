@@ -75,13 +75,35 @@ time=0
 
 #################
 
-prevPhi = Constant(0)
-prevPhiVel = Constant(0)
-prevPhiAcc = Constant(0)
+prevPhiFunc = Function(V)
+prevPhiFuncVel = Function(V)
+prevPhiFuncAcc = Function(V)
 
-#prevPhi = Function(V)
-#prevPhiVel = Function(V)
-#prevPhiAcc = Function(V)
+#prevPhiFunc.assign(Constant(0.0))
+#prevPhiFuncVel.assign(Constant(0.0))
+#prevPhiFuncAcc.assign(Constant(0.0))
+
+v = TestFunction(V)
+
+phi = TrialFunction(V)
+phiVel = ((phi-prevPhiFunc)*2/dt)-prevPhiFuncVel
+phiAcc = (phiVel-prevPhiFuncVel)*Constant(2/dt)-prevPhiFuncAcc
+
+phiFunc = Function(V)
+phiFuncVel = Function(V)
+phiFuncAcc = Function(V)
+
+pressure = Function(V)
+
+inFlow=Constant(0)
+outFlow=Constant(0)
+
+F = dot(grad(phi),grad(v))*dx(0) + (1/g)*phiAcc*v*ds(1) - inFlow*v*ds(2) + outFlow*v*ds(3)
+a,L = lhs(F),rhs(F)
+
+#bc1 = DirichletBC(V, 0, boundaries, 4)
+#bc2 = DirichletBC(V, 0, boundaries, 0)
+#bcs = [bc1,bc2]
 
 phiFile = File("phi.pvd")
 
@@ -91,47 +113,23 @@ while (time<timespan):
  
  time+=dt
  
- phi = TrialFunction(V)
+ inFlow.assign(Constant(10*min(time, 0.1)))
  
- phiVel = (phi-prevPhi)*Constant(2/dt)-prevPhiVel
- phiAcc = (phiVel-prevPhiVel)*Constant(2/dt)-prevPhiAcc
+ solve(a==L, phiFunc)
  
- v = TestFunction(V)
+ phiFile<<phiFunc
  
- inFlow=Constant(1.0)
+ phiFuncVel.assign(((phiFunc-prevPhiFunc)*2/dt)-prevPhiFuncVel)
+ phiFuncAcc.assign(((phiFuncVel-prevPhiFuncVel)*2/dt)-prevPhiFuncAcc)
  
- outFlow=Constant(0.0)
- F = dot(grad(phi),grad(v))*dx(0) + g*phiAcc*v*ds(1) - inFlow*v*ds(2) + outFlow*v*ds(3)
+ pressure.assign(phiFuncVel*Constant(rho))
+ print(pressure([9,9,0]))
  
- a,L = lhs(F),rhs(F)
+ pressureFile<<pressure
  
- bc1 = DirichletBC(V, 0, boundaries, 4)
- bc2 = DirichletBC(V, 0, boundaries, 0)
- 
- bcs = [bc1,bc2]
- 
- phi = Function(V)
- solve(a==L, phi, bc1)
- 
- phiFile<<phi
- 
- phiVel = ((phi-prevPhi)*2/dt)-prevPhiVel
- phiAcc = (phiVel-prevPhiVel)*Constant(2/dt)-prevPhiAcc
- 
- print(type(phi))
- print(type(phiVel))
- 
- pressure = phiVel*Constant(rho)
- #print(phi([5,5,5]))
- print(pressure([5,5,9]))
- 
- #plot(pressure)
- 
- #pressureFile<<pressure.copy()
- 
- prevPhi=phi
- prevPhiVel=phiVel
- prevPhiAcc=phiAcc
+ prevPhiFunc.assign(phiFunc)
+ prevPhiFuncVel.assign(phiFuncVel)
+ prevPhiFuncAcc.assign(phiFuncAcc)
 
  
 ###################
