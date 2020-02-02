@@ -40,19 +40,19 @@ inputSurface=InputSurface()
 outputSurface=OutputSurface()
 bottomSurface=BottomSurface()
 
-domains = CellFunction("size_t", mesh)
+domains = CellFunction("size_t",mesh)
 domains.set_all(0)
 
-ds = Measure('dx', domain=mesh, subdomain_data=domains)
+dx = Measure('dx', domain=mesh, subdomain_data=domains)
 
-boundaries = FacetFunction("size_t", mesh)
+boundaries = FaceFunction("size_t", mesh)
 boundaries.set_all(0)
 waveSurface.mark(boundaries, 1)
 inputSurface.mark(boundaries, 2)
 outputSurface.mark(boundaries, 3)
 bottomSurface.mark(boundaries,4)
 
-dx = Measure("ds", domain=mesh, subdomain_data=boundaries)
+ds = Measure("ds", domain=mesh, subdomain_data=boundaries)
 
 
 ################################
@@ -67,6 +67,7 @@ boundariesFile<<boundaries
 
 dt=0.1
 timespan=1
+
 g=9.81
 rho=1000
 
@@ -97,7 +98,7 @@ while (time<timespan):
   inFlow=Constant(0.0)
  
  outFlow=Constant(0.0)
- F = dot(grad(phi),grad(v))*dx(0) + g*phiAcc*v*ds(1) - inFlow*v*ds(2) + outFlow*v*ds(3)
+ F = dot(grad(phi),grad(v))*dx(0) - g*phiAcc*v*ds(1) - inFlow*v*ds(2) + outFlow*v*ds(3)
  
  a,L = lhs(F),rhs(F)
  
@@ -113,6 +114,11 @@ while (time<timespan):
  
  phiVel = (phi-prevPhi)*Constant(2/dt)-prevPhiVel
  phiAcc = (phiVel-prevPhiVel)*Constant(2/dt)-prevPhiAcc
+ 
+ prevPhi=phi
+ prevPhiVel=phiVel
+ prevPhiAcc=phiAcc
+
  
 ###################
 
