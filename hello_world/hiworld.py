@@ -22,8 +22,8 @@ L = f*v*dx
 u = Function(V)
 solve(a == L, u, bc)
 # Plot solution and mesh
-plot(u)
-plot(mesh)
+#plot(u)
+#plot(mesh)
 # Save solution to file in VTK format
 vtkfile = File("poisson/solution.pvd")
 vtkfile << u
