@@ -1,4 +1,5 @@
 from fenics import *
+import math
 # Create mesh and define function space
 mesh = BoxMesh(Point(0, 0, 0),  Point(10, 10, 10), 10, 10, 10)
 V = FunctionSpace(mesh, 'P', 1)
@@ -65,47 +66,66 @@ boundariesFile<<boundaries
 
 ################################
 
-dt=0.01
-timespan=10
+
+
+gamma=0.5
+dt=0.02
+
+timespan=20
+time=0
 
 g=10
 rho=1000
 
-time=0
+
 
 #################
+
+c_one = (1-gamma)/(gamma*dt)
+c_two = -1/((1-gamma)*gamma*dt)
+c_three = (2-gamma)/((1-gamma)*dt)
+
+#################
+
+
 
 prevPhiFunc = Function(V)
 prevPhiFuncVel = Function(V)
 prevPhiFuncAcc = Function(V)
 
-#prevPhiFunc.assign(Expression("0", degree=0))
-#prevPhiFuncVel.assign(Expression("(10-x[2])*9.81", degree=1))
-#prevPhiFuncAcc.assign(Expression("0", degree=0))
-
-v = TestFunction(V)
-
-phi = TrialFunction(V)
-phiVel = ((phi-prevPhiFunc)*2/dt)-prevPhiFuncVel
-phiAcc = (phiVel-prevPhiFuncVel)*Constant(2/dt)-prevPhiFuncAcc
+interPhiFunc = Function(V)
+interPhiFuncVel = Function(V)
+interPhiFuncAcc = Function(V)
 
 phiFunc = Function(V)
 phiFuncVel = Function(V)
 phiFuncAcc = Function(V)
 
+
+
+v = TestFunction(V)
+phi = TrialFunction(V)
+
+phiVel_first = (phi-prevPhiFunc)*2/(gamma*dt)-prevPhiFuncVel
+phiAcc_first = (phiVel_first-prevPhiFuncVel)*2/(gamma*dt)-prevPhiFuncAcc
+
+phiVel_second = c_one*prevPhiFunc + c_two*interPhiFunc + c_three*phi
+phiAcc_second = c_one*prevPhiFuncVel + c_two*interPhiFuncVel + c_three*phiVel_second
+
+
 pressure = Function(V)
+
 
 inFlow=Constant(0)
 outFlow=Constant(0)
 
-F = dot(grad(phi),grad(v))*dx(0) + (1/float(g))*phiAcc*v*ds(1) - inFlow*v*ds(2) + outFlow*v*ds(3)
-a,L = lhs(F),rhs(F)
+F_first = dot(grad(phi),grad(v))*dx(0) + (1/float(g))*phiAcc_first*v*ds(1) - inFlow*v*ds(2) + outFlow*v*ds(3)
+a_first,L_first = lhs(F_first),rhs(F_first)
 
-#bc1 = DirichletBC(V, 0, boundaries, 4)
-#bc2 = DirichletBC(V, 0, boundaries, 0)
-#bcs = [bc1,bc2]
+F_second = dot(grad(phi),grad(v))*dx(0) + (1/float(g))*phiAcc_second*v*ds(1) - inFlow*v*ds(2) + outFlow*v*ds(3)
+a_second,L_second = lhs(F_second),rhs(F_second)
 
-solve(a==L, phiFunc)
+
 
 phiFile = File("phi.pvd")
 
@@ -113,30 +133,43 @@ pressureFile = File("pressure.pvd")
 
 while (time<timespan):
  
- #inFlow.assign(Constant(10*min(time, 0.1))) # This works after the ramp ends. (no it doesnt, numerical errors just cancel)
- #inFlow.assign(Constant(10*min(max(time-0.05, 0),0.1))) #This also only works under the surface once we hit 0.0
+ inFlow.assign(Constant(math.sin(time)))
  
- inFlow.assign(Constant(1))
+ #if (time<=1):
+ # inFlow.assign(Constant(0))
+ #else:
+ # inFlow.assign(Constant(1))
  
- solve(a==L, phiFunc)
+ #step one
+ 
+ solve(a_first==L_first, interPhiFunc)
+ 
+ interPhiFuncVel.assign(((interPhiFunc-prevPhiFunc)*2/(dt*gamma))-prevPhiFuncVel)
+ interPhiFuncAcc.assign(((interPhiFuncVel-prevPhiFuncVel)*2/(dt*gamma))-prevPhiFuncAcc)
+ 
+ #step two
+ 
+ solve(a_second==L_second, phiFunc)
+ 
+ phiFuncVel.assign(c_one*prevPhiFunc + c_two*interPhiFunc + c_three*phiFunc)
+ phiFuncAcc.assign(c_one*prevPhiFuncVel + c_two*interPhiFuncVel + c_three*phiFuncVel)
+ 
+ #output output
  
  phiFile<<phiFunc
  
- phiFuncVel.assign(((phiFunc-prevPhiFunc)*2/dt)-prevPhiFuncVel)
- phiFuncAcc.assign(((phiFuncVel-prevPhiFuncVel)*2/dt)-prevPhiFuncAcc)
- 
  pressure.assign(phiFuncVel*Constant(rho))
+ pressureFile<<pressure
  
  print(round(time, 4), round(pressure([1,1,1]),2), round(pressure([1,1,2]),2))
  
- pressureFile<<pressure
+ #prep for next step
  
  prevPhiFunc.assign(phiFunc)
  prevPhiFuncVel.assign(phiFuncVel)
  prevPhiFuncAcc.assign(phiFuncAcc)
  
  time+=dt
-
  
 ###################
 
