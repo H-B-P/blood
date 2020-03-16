@@ -1,7 +1,13 @@
 from fenics import *
+from dolfin import *
+from mshr import *
 import math
 # Create mesh and define function space
-mesh = BoxMesh(Point(0, 0, 0),  Point(10, 10, 10), 20, 20, 20)
+
+#domain = Box(Point(0,0,0),Point(10,10,10)) - Box(Point(0,4,4),Point(0.1,6,6))
+domain = Box(Point(0,0,0),Point(10,10,10)) + Box(Point(-0.1,4,4),Point(0,6,6))
+mesh = generate_mesh(domain,40)
+#mesh=BoxMesh(Point(0, 0, 0),  Point(10, 10, 10), 10, 10, 10)
 V = FunctionSpace(mesh, 'P', 1)
 
 def boundary(x, on_boundary):
@@ -16,7 +22,7 @@ class WaveSurface(SubDomain):
 
 class InputSurface(SubDomain):
     def inside(self, x, on_boundary):
-        if on_boundary and near(x[0], 0) and between(x[1], (4, 6)) and between(x[2], (4, 6)):
+        if on_boundary and near(x[0], -0.1) and between(x[1], (4, 6)) and between(x[2], (4, 6)):
             return True
         else:
             return False
@@ -41,12 +47,12 @@ inputSurface=InputSurface()
 outputSurface=OutputSurface()
 bottomSurface=BottomSurface()
 
-domains = CellFunction("size_t",mesh)
+domains = MeshFunction("size_t",mesh,3)
 domains.set_all(0)
 
 dx = Measure('dx', domain=mesh, subdomain_data=domains)
 
-boundaries = FaceFunction("size_t", mesh)
+boundaries = MeshFunction("size_t", mesh,2)
 boundaries.set_all(0)
 waveSurface.mark(boundaries, 1)
 inputSurface.mark(boundaries, 2)
