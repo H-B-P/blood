@@ -1,0 +1,9 @@
+k1 (118kHz): -1321.363 kPa -609.93 kPa -412.755 kPa -220.727 kPa
+k2 (182kHz): 2105.105 kPa 882.201 kPa 622.201 kPa 345.215 kPa
+k3 (254kHz): -2713.008 kPa -1288.644 kPa -881.503 kPa -471.047 kPa
+
+well okay then
+
+k1 is just 118, k2 is just 182, k3 is just 254. (would add another const for this)
+
+4.5/(1/118+0.56/182+0.63/254) = 320.7

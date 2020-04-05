@@ -1,0 +1,12 @@
+pressure at end
+
+resolution=40, timestep=0.4ms: 21122.7375
+
+resolution=40, timestep=0.2ms: 21454.0324
+
+resolution=40, timestep=0.1ms: 21199.9919
+
+resolution=40, timestep=0.05ms: 20885.6459
+
+resolution=50, timestep=0.4ms: 21112.6313
+
