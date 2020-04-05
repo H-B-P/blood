@@ -122,9 +122,11 @@ fifteens=[]
 twentyfives=[]
 fifties = [] 
 
+A_C = 149.76
+
 while (time<(timespan+dt/2)):
  
- flowAmt = (320.7/118)*math.cos(time*2*math.pi*118000)+(320.7/182*0.56)*math.cos(time*2*math.pi*182000)+(320.7/254*0.63)*math.cos(time*2*math.pi*254000)
+ flowAmt = (A_C/40*0.215)*math.cos(time*2*math.pi*40000)+(A_C/55*0.172)*math.cos(time*2*math.pi*55000)+(A_C/70*0.178)*math.cos(time*2*math.pi*70000)+(A_C/85*0.25)*math.cos(time*2*math.pi*85000)+(A_C/100*0.203)*math.cos(time*2*math.pi*100000)+(A_C/118*1)*math.cos(time*2*math.pi*118000)+(A_C/182*0.56)*math.cos(time*2*math.pi*182000)+(A_C/254*0.63)*math.cos(time*2*math.pi*254000)
  print("flowAmt: ",flowAmt)
  inFlow.assign(Constant(flowAmt))
  
